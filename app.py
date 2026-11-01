@@ -53,7 +53,7 @@ if st.button("🚀 Buat Konten TikTok Sekarang", type="primary"):
             
             with st.spinner("🤖 Gemini sedang menganalisis foto dan meracik konten..."):
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.8-flash',
                     contents=contents,
                 )
                 
