@@ -8,24 +8,29 @@ st.set_page_config(
 
 st.title("📱 TikTok Smart Content Generator")
 st.write(
-    "Upload foto, masukkan topik, pilih model, dan biarkan AI meracik konten TikTok yang menarik!"
+    "Upload foto, masukkan topik, pilih model Gemini terlengkap, dan biarkan AI"
+    " meracik konten TikTok!"
 )
 
-# Input API Key & Pilihan Model
+# Input API Key & Pilihan Model yang Lebih Banyak
 api_key = st.text_input("Masukkan Gemini API Key Anda:", type="password")
 
-# Pilihan 5 model Gemini (Flash & Pro) dari seri 1.5 hingga terbaru
+# Daftar pilihan model yang lebih lengkap dan diperbarui
 pilihan_model = st.selectbox(
     "Pilih Versi Model Gemini:",
     options=[
+        "gemini-3.8-flash",
         "gemini-2.5-flash",
         "gemini-2.5-pro",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
+        "gemini-2.0-flash-exp",
         "gemini-1.5-pro",
+        "gemini-1.5-flash",
     ],
     index=0,
-    help="Pilih model yang ingin digunakan untuk menghasilkan konten.",
+    help=(
+        "Pilih model yang aktif. Jika salah satu error, silakan ganti ke pilihan"
+        " model lainnya."
+    ),
 )
 
 topic = st.text_input(
