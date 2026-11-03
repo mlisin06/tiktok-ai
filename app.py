@@ -8,28 +8,25 @@ st.set_page_config(
 
 st.title("📱 TikTok Smart Content Generator")
 st.write(
-    "Upload foto, masukkan topik, pilih model Gemini terlengkap, dan biarkan AI"
-    " meracik konten TikTok!"
+    "Upload foto, masukkan topik, pilih model Gemini, dan biarkan AI meracik"
+    " konten TikTok!"
 )
 
-# Input API Key & Pilihan Model yang Lebih Banyak
+# Input API Key & Pilihan Model
 api_key = st.text_input("Masukkan Gemini API Key Anda:", type="password")
 
-# Daftar pilihan model yang lebih lengkap dan diperbarui
+# Pilihan model dengan opsi cadangan jika salah satu sibuk
 pilihan_model = st.selectbox(
     "Pilih Versi Model Gemini:",
     options=[
-        "gemini-3.8-flash",
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-        "gemini-2.0-flash-exp",
-        "gemini-1.5-pro",
         "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-3.8-flash",
     ],
     index=0,
     help=(
-        "Pilih model yang aktif. Jika salah satu error, silakan ganti ke pilihan"
-        " model lainnya."
+        "Jika model 1.5 Flash error 503, silakan ganti ke 1.5 Pro atau 3.8 Flash"
+        " di sini."
     ),
 )
 
@@ -58,7 +55,6 @@ if st.button("🚀 Buat Konten TikTok Sekarang", type="primary"):
     st.warning("Mohon masukkan topik video terlebih dahulu!")
   else:
     try:
-      # Inisialisasi klien menggunakan Google Gen AI SDK terbaru
       client = genai.Client(api_key=api_key)
       contents = [
           f"Bertindaklah sebagai Content Creator TikTok profesional. Berdasarkan topik '{topic}' dan foto-foto yang diunggah, buatkan draf konten TikTok yang menarik, interaktif, dan aman dari pelanggaran:"
@@ -85,15 +81,37 @@ if st.button("🚀 Buat Konten TikTok Sekarang", type="primary"):
       with st.spinner(
           f"🤖 Menggunakan model `{pilihan_model}` untuk menganalisis konten..."
       ):
-        # Memanggil model sesuai pilihan dari dropdown
-        response = client.models.generate_content(
-            model=pilihan_model,
-            contents=contents,
-        )
+        # Percobaan pertama menggunakan model pilihan pengguna
+        try:
+          response = client.models.generate_content(
+              model=pilihan_model,
+              contents=contents,
+          )
+        except Exception as err:
+          # Jika error 503, otomatis dialihkan (fallback) ke model alternatif
+          if "503" in str(err) or "UNAVAILABLE" in str(err):
+            st.warning(
+                "Model sedang sibuk (503). Mencoba beralih ke model alternatif"
+                " secara otomatis..."
+            )
+            fallback_model = (
+                "gemini-1.5-pro"
+                if pilihan_model != "gemini-1.5-pro"
+                else "gemini-1.5-flash"
+            )
+            response = client.models.generate_content(
+                model=fallback_model,
+                contents=contents,
+            )
+          else:
+            raise err
 
       st.success("🎉 Konten TikTok Berhasil Dibuat!")
       st.markdown("---")
       st.markdown(response.text)
 
     except Exception as e:
-      st.error(f"Terjadi kesalahan: {e}")
+      st.error(
+          f"Terjadi kesalahan: {e}. Silakan ganti pilihan model di atas ke"
+          " versi lain atau coba beberapa saat lagi."
+      )
