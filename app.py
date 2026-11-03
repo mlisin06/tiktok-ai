@@ -8,11 +8,11 @@ st.set_page_config(
 
 st.title("📱 TikTok Smart Content Generator")
 st.write(
-    "Upload foto, masukkan topik, pilih model Gemini terbaru, dan biarkan AI"
-    " meracik konten TikTok!"
+    "Upload foto, masukkan topik, pilih model, dan biarkan AI meracik konten"
+    " TikTok!"
 )
 
-# Input API Key & Pilihan Model yang Pasti Aktif
+# Input API Key & Pilihan Model Utama
 api_key = st.text_input("Masukkan Gemini API Key Anda:", type="password")
 
 pilihan_model = st.selectbox(
@@ -23,7 +23,7 @@ pilihan_model = st.selectbox(
         "gemini-1.5-pro",
     ],
     index=0,
-    help="Gunakan gemini-3.8-flash agar sesuai dengan pembaruan sistem terbaru.",
+    help="Jika model utama sibuk, sistem akan otomatis mengalihkannya.",
 )
 
 topic = st.text_input(
@@ -75,12 +75,29 @@ if st.button("🚀 Buat Konten TikTok Sekarang", type="primary"):
             """)
 
       with st.spinner(
-          f"🤖 Menggunakan model `{pilihan_model}` untuk menganalisis konten..."
+          f"🤖 Menganalisis konten menggunakan model `{pilihan_model}`..."
       ):
-        response = client.models.generate_content(
-            model=pilihan_model,
-            contents=contents,
-        )
+        # Daftar cadangan model otomatis jika terjadi error 503
+        daftar_cadangan = [pilihan_model, "gemini-3.8-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        response = None
+        sukses = False
+        
+        for m in daftar_cadangan:
+          try:
+            response = client.models.generate_content(
+                model=m,
+                contents=contents,
+            )
+            sukses = True
+            break
+          except Exception as err:
+            if "503" in str(err) or "UNAVAILABLE" in str(err):
+              continue # Coba model berikutnya jika 503
+            else:
+              raise err # Lempar error lain jika bukan 503
+
+        if not sukses:
+          raise Exception("Semua model sedang mengalami lonjakan trafik (503). Silakan coba beberapa saat lagi.")
 
       st.success("🎉 Konten TikTok Berhasil Dibuat!")
       st.markdown("---")
