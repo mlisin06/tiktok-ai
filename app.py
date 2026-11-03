@@ -8,22 +8,22 @@ st.set_page_config(
 
 st.title("📱 TikTok Smart Content Generator")
 st.write(
-    "Upload foto, masukkan topik, pilih model, dan biarkan AI meracik konten"
-    " TikTok!"
+    "Upload foto, masukkan topik, pilih model Gemini, dan biarkan AI meracik"
+    " konten TikTok!"
 )
 
-# Input API Key & Pilihan Model Utama
+# Input API Key & Pilihan Model yang Kompatibel dengan SDK Terbaru
 api_key = st.text_input("Masukkan Gemini API Key Anda:", type="password")
 
 pilihan_model = st.selectbox(
     "Pilih Versi Model Gemini:",
     options=[
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
         "gemini-3.8-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
     ],
     index=0,
-    help="Jika model utama sibuk, sistem akan otomatis mengalihkannya.",
+    help="Gunakan model Flash versi terbaru yang didukung oleh SDK.",
 )
 
 topic = st.text_input(
@@ -77,12 +77,12 @@ if st.button("🚀 Buat Konten TikTok Sekarang", type="primary"):
       with st.spinner(
           f"🤖 Menganalisis konten menggunakan model `{pilihan_model}`..."
       ):
-        # Daftar cadangan model otomatis jika terjadi error 503
-        daftar_cadangan = [pilihan_model, "gemini-3.8-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        # Mekanisme otomatis mencoba beberapa model jika terjadi gangguan/traffic
+        daftar_model_coba = [pilihan_model, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.8-flash"]
         response = None
         sukses = False
-        
-        for m in daftar_cadangan:
+
+        for m in daftar_model_coba:
           try:
             response = client.models.generate_content(
                 model=m,
@@ -90,18 +90,22 @@ if st.button("🚀 Buat Konten TikTok Sekarang", type="primary"):
             )
             sukses = True
             break
-          except Exception as err:
-            if "503" in str(err) or "UNAVAILABLE" in str(err):
-              continue # Coba model berikutnya jika 503
-            else:
-              raise err # Lempar error lain jika bukan 503
+          except Exception:
+            continue # Lanjut ke model berikutnya jika gagal
 
         if not sukses:
-          raise Exception("Semua model sedang mengalami lonjakan trafik (503). Silakan coba beberapa saat lagi.")
+          # Jika semua gagal dengan client v1beta, coba fallback menggunakan format string model standar
+          response = client.models.generate_content(
+              model="gemini-2.5-flash",
+              contents=contents,
+          )
 
       st.success("🎉 Konten TikTok Berhasil Dibuat!")
       st.markdown("---")
       st.markdown(response.text)
 
     except Exception as e:
-      st.error(f"Terjadi kesalahan: {e}")
+      st.error(
+          f"Terjadi kesalahan: {e}. Pastikan API Key aktif dan coba pilih model"
+          " lain dari dropdown."
+      )
